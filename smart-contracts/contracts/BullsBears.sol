@@ -43,14 +43,14 @@ contract BullsBears is
         currentPrice = getLatestPrice();
 
         tokenUris[PriceTrend.BULL] = [
-            "https://ipfs.io/ipfs/QmRXyfi3oNZCubDxiVFre3kLZ8XeGt6pQsnAQRZ7akhSNs?filename=gamer_bull.json",
-            "https://ipfs.io/ipfs/QmRJVFeMrtYS2CUVUM2cHJpBV5aX2xurpnsfZxLTTQbiD3?filename=party_bull.json",
-            "https://ipfs.io/ipfs/QmdcURmN1kEEtKgnbkVJJ8hrmsSWHpZvLkRgsKKoiWvW9g?filename=simple_bull.json"
+            "https://ipfs.io/ipfs/QmSFifprqzxcaoJznJQPUDgWsYQHuyhCSNaFhrk6p83GYG?filename=gamer_bull.json",
+            "https://ipfs.io/ipfs/QmakHqXHqxESNvHzmbpRnJQNmdfAzo5MwQMZyRqkrj3psK?filename=party_bull.json",
+            "https://ipfs.io/ipfs/QmRcsDtMB1uJMWPH6PRTHCRzKrwC1BrbNMqVWvnNnm4B8Y?filename=simple_bull.json"
         ];
         tokenUris[PriceTrend.BEAR] = [
-            "https://ipfs.io/ipfs/Qmdx9Hx7FCDZGExyjLR6vYcnutUR8KhBZBnZfAPHiUommN?filename=beanie_bear.json",
-            "https://ipfs.io/ipfs/QmTVLyTSuiKGUEmb88BgXG3qNC8YgpHZiFbjHrXKH3QHEu?filename=coolio_bear.json",
-            "https://ipfs.io/ipfs/QmbKhBXVWmwrYsTPFYfroR2N7NAekAMxHUVg2CWks7i9qj?filename=simple_bear.json"
+            "https://ipfs.io/ipfs/QmScXgY1SRS7XFtbagVc7VtLguLhGGyjkumAR7cKNu855m?filename=beanie_bear.json",
+            "https://ipfs.io/ipfs/QmQXkmc4iq138ud3PfuT74UKJYqyEJy9EpRPa9accQaoqL?filename=coolio_bear.json",
+            "https://ipfs.io/ipfs/QmS6H9TskkfQ77Drd39szuNXq6kfGuGgBv2P9ZPAww3wEJ?filename=simple_bear.json"
         ];
     }
 
