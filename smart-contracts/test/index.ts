@@ -1,7 +1,7 @@
 import {
-  BullsBears,
   BullsBears__factory,
   MockV3Aggregator,
+  VRFCoordinatorV2Mock,
 } from "../typechain";
 
 import { BigNumber } from "ethers";
@@ -12,6 +12,8 @@ describe("BullsBears", function () {
   const LATEST_PRICE = 120_000_000;
 
   let mockAggregator: MockV3Aggregator;
+  let mockVRF: VRFCoordinatorV2Mock;
+  let vrfSubscriptionId: number;
   let BullsBears: BullsBears__factory;
 
   this.beforeAll(async () => {
@@ -19,11 +21,28 @@ describe("BullsBears", function () {
     mockAggregator = await MockAggregator.deploy(8, LATEST_PRICE);
     await mockAggregator.deployed();
 
+    const MockVRF = await ethers.getContractFactory("VRFCoordinatorV2Mock");
+    mockVRF = await MockVRF.deploy(
+      "100000000000000", // _baseFee
+      "1000000000" // _gasPriceLink
+    );
+
+    await mockVRF.createSubscription();
+    vrfSubscriptionId = 1; // mock vrf coordinator creates a subscription with id of 1 at first creation
+    await mockVRF.fundSubscription(
+      vrfSubscriptionId,
+      ethers.utils.parseEther("7")
+    );
+
     BullsBears = await ethers.getContractFactory("BullsBears");
   });
 
   it("Should return latest BTC price (USD)", async function () {
-    const bullsBears = await BullsBears.deploy(60, mockAggregator.address);
+    const bullsBears = await BullsBears.deploy(
+      60,
+      mockAggregator.address,
+      mockVRF.address
+    );
     await bullsBears.deployed();
 
     let currentPrice = await bullsBears.currentPrice();
@@ -33,7 +52,11 @@ describe("BullsBears", function () {
   it("Should mint new token", async function () {
     const [owner, account1] = await ethers.getSigners();
 
-    const bullsBears = await BullsBears.deploy(60, mockAggregator.address);
+    const bullsBears = await BullsBears.deploy(
+      60,
+      mockAggregator.address,
+      mockVRF.address
+    );
     await bullsBears.deployed();
 
     let tx = await bullsBears.connect(owner).safeMint(account1.address);
@@ -48,7 +71,11 @@ describe("BullsBears", function () {
   it("Should list token metadata per owner", async function () {
     const [owner, account1, account2] = await ethers.getSigners();
 
-    const bullsBears = await BullsBears.deploy(60, mockAggregator.address);
+    const bullsBears = await BullsBears.deploy(
+      60,
+      mockAggregator.address,
+      mockVRF.address
+    );
     await bullsBears.deployed();
 
     let tx = await bullsBears.connect(owner).safeMint(account1.address);
@@ -113,7 +140,8 @@ describe("BullsBears", function () {
     // Deploy contract
     const bullsBears = await BullsBears.deploy(
       1 /* one second interval */,
-      mockAggregator.address
+      mockAggregator.address,
+      mockVRF.address
     );
     await bullsBears.deployed();
 
@@ -167,5 +195,64 @@ describe("BullsBears", function () {
 
     expect(acc1TokenURIInitial).not.equal(acc1TokenURIFinal);
     expect(acc2TokenURIInitial).not.equal(acc2TokenURIFinal);
+  });
+
+  it("Should change tokens metadata to bear price trend with true randomness (Chainlink VRF)", async () => {
+    // Get accounts
+    const [owner, acc1, acc2] = await ethers.getSigners();
+
+    // Deploy contract
+    const bullsBears = await BullsBears.deploy(
+      1 /* one second interval */,
+      mockAggregator.address,
+      mockVRF.address
+    );
+    await bullsBears.deployed();
+
+    let tx = await bullsBears.setVRFSubscriptionId(vrfSubscriptionId);
+    await tx.wait();
+
+    // Mint Tokens
+    tx = await bullsBears.connect(owner).safeMint(acc1.address);
+    await tx.wait();
+    tx = await bullsBears.connect(owner).safeMint(acc2.address);
+    await tx.wait();
+
+    // Get initial account tokens URI
+    const acc1TokenId = await bullsBears
+      .connect(acc1)
+      .tokenOfOwnerByIndex(acc1.address, 0);
+    const acc1TokenURIInitial = await bullsBears
+      .connect(acc1)
+      .tokenURI(acc1TokenId);
+    const acc2TokenId = await bullsBears
+      .connect(acc2)
+      .tokenOfOwnerByIndex(acc2.address, 0);
+    const acc2TokenURIInitial = await bullsBears
+      .connect(acc2)
+      .tokenURI(acc2TokenId);
+
+    // Check upkeep interval has passed
+    const upkeep = await bullsBears.connect(owner).checkUpkeep([]); // no params are passed
+    console.log("Upkeep:", upkeep);
+    expect(upkeep[0]).to.equal(true);
+
+    // Update btc price in aggregator
+    const newBTCPrice = 10_000_000;
+    tx = await mockAggregator.connect(owner).updateAnswer(newBTCPrice);
+    await tx.wait();
+
+    // Perform upkeep
+    tx = await bullsBears.connect(owner).performUpkeep([]);
+    const result = await tx.wait();
+
+    let [reqId, invoker] = result.events!.filter(
+      (x) => x.event === "RequestedRandomness"
+    )[0].args!;
+
+    await expect(mockVRF.fulfillRandomWords(reqId, bullsBears.address)).to.emit(
+      mockVRF,
+      "RandomWordsFulfilled"
+    );
   });
 });
