@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "hardhat/console.sol";
 
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
@@ -125,12 +126,16 @@ contract BullsBears is
 
     function setAllTokensUris() private {
         uint n = _tokenIdCounter.current();
+
+        console.log("Total NFTs to update:", n);
         if (subscriptionId == 0) {
+            console.log("Update NFTs using semi-random numbers");
             for (uint idx = 0; idx < n; ++idx ) {
                 _setTokenURI(idx, getSemiRandomTokenUri());
             }
             emit PriceTrendUpdated(priceTrend == PriceTrend.BULL ? "bull" : "bear");
         } else {
+            console.log("Update NFTs with truly random numbers using VRF");
             numWords = uint32(n);
             requestRandomNumbers();
         }
@@ -145,6 +150,7 @@ contract BullsBears is
 
     function performUpkeep(bytes calldata /* performData */) external override {
         if ((block.timestamp - lastTimestamp) > interval ) {
+            console.log("Performing upkeep...");
             lastTimestamp = block.timestamp;
             uint lastPrice = getLatestPrice();
 
@@ -152,17 +158,23 @@ contract BullsBears is
                 priceTrend = lastPrice < currentPrice? PriceTrend.BEAR : PriceTrend.BULL;
                 setAllTokensUris();
                 currentPrice = lastPrice;
+            } else {
+                console.log("Price trend has not change, skip URI update");
+                console.log("current price:", currentPrice);
+                console.log("last price:", lastPrice);
             }
-        }
+        } else console.log("Upkeep not ready, interval has not passed.");
     }
 
     // Chianlink VRF
     function setVRFSubscriptionId(uint64 id) public onlyOwner {
+        console.log("Updating VRF subscription value to:", id);
         subscriptionId = id;
     }
 
     function requestRandomNumbers() private onlyOwner {
-        coordinator.requestRandomWords(
+        console.log("Send request to VRF for this number of random numbers:", numWords);
+        uint requestId = coordinator.requestRandomWords(
             keyHash,
             subscriptionId,
             requestConfirmations,
@@ -172,6 +184,7 @@ contract BullsBears is
     }
 
     function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
+        console.log("VRF has responded with a total of random numbers:", randomWords.length);
         require(_tokenIdCounter.current() == randomWords.length, "Random numbers mismatch");
 
         uint totalUniqueNfts = tokenUris[priceTrend].length;
