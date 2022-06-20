@@ -45,6 +45,8 @@ contract BullsBears is
     uint32 private numWords =  0; // changes dynamically very time setAllTokensUris is called
 
     event PriceTrendUpdated(string trend);
+    event RequestedRandomness( uint256 reqId, uint256 totalNumbers);
+    event ReceivedRandomness( uint256 reqId, uint256 totalNumbers);
 
     constructor(uint updateInterval, address btcPriceFeed, address vrfCoordinator) ERC721("Bulls & Bears", "BnB") VRFConsumerBaseV2(vrfCoordinator) {
         // VRF
@@ -181,11 +183,13 @@ contract BullsBears is
             callbackGasLimit,
             numWords
         );
+        emit RequestedRandomness(requestId, numWords);
     }
 
-    function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         console.log("VRF has responded with a total of random numbers:", randomWords.length);
         require(_tokenIdCounter.current() == randomWords.length, "Random numbers mismatch");
+        emit ReceivedRandomness(requestId, randomWords.length);
 
         uint totalUniqueNfts = tokenUris[priceTrend].length;
         for (uint idx = 0; idx < randomWords.length; ++idx) {
