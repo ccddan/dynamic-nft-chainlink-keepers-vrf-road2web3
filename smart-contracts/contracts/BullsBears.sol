@@ -112,6 +112,7 @@ contract BullsBears is
             abi.encodePacked(
                 block.number,
                 block.timestamp,
+                block.difficulty,
                 msg.sender,
                 msg.sig
             )
