@@ -36,9 +36,8 @@ contract BullsBears is
 
 
     // VRF Configuration
-    VRFCoordinatorV2Interface private immutable coordinator = VRFCoordinatorV2Interface(VRF_COORDINATOR);
+    VRFCoordinatorV2Interface private coordinator;
     uint64 private subscriptionId;
-    address private constant VRF_COORDINATOR = 0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed;
     bytes32 private immutable keyHash = 0x4b09e658ed251bcafeebbc69400383d49f344ace09b9576fe248bb02c003fe9f;
     uint32 private immutable callbackGasLimit = 100000;
     uint16 private immutable requestConfirmations = 3;
@@ -46,7 +45,10 @@ contract BullsBears is
 
     event PriceTrendUpdated(string trend);
 
-    constructor(uint updateInterval, address btcPriceFeed) ERC721("Bulls & Bears", "BnB") VRFConsumerBaseV2(VRF_COORDINATOR) {
+    constructor(uint updateInterval, address btcPriceFeed, address vrfCoordinator) ERC721("Bulls & Bears", "BnB") VRFConsumerBaseV2(vrfCoordinator) {
+        // VRF
+        coordinator = VRFCoordinatorV2Interface(vrfCoordinator);
+
         // keeper
         interval = updateInterval;
         lastTimestamp = block.timestamp;

@@ -5,10 +5,12 @@ async function main() {
   const updateIntervalInSeconds = 60;
   const btcUSDPriceFeedPolygonAddress =
     "0x007A22900a3B98143368Bd5906f8E17e9867581b";
+  const vrfCoordinatorAddr = "0x7a1BaC17Ccc5b313516C5E16fb24f7659aA5ebed";
 
   const bullsBears = await BullsBears.deploy(
     updateIntervalInSeconds,
-    btcUSDPriceFeedPolygonAddress
+    btcUSDPriceFeedPolygonAddress,
+    vrfCoordinatorAddr
   );
 
   await bullsBears.deployed();
